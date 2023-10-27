@@ -1,9 +1,16 @@
 const { initializeDatabase, queryDB, insertDB } = require("./database");
 const { body } = require("express-validator");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const pino = require("pino")();
+const AesEncryption = require("aes-encryption");
 
 let db;
+const jwtSecret = "supersecret";
+const aes = new AesEncryption();
+aes.setSecretKey(
+  process.env.SECRET ||
+    "11122233344455566677788822244455555555555555555231231321313aaaff"
+);
 
 const authMiddleware = (req, res, next) => {
   const authorization = req.headers.authorization;
@@ -56,29 +63,43 @@ const initializeAPI = async (app) => {
     postTweet
   );
 };
+function containsHTML(str) {
+  const htmlPattern = /<[^>]*>/;
+  return htmlPattern.test(str);
+}
+const postTweet = async (req, res) => {
+  const { username, timestamp, text } = req.body;
+
+  if (containsHTML(text) === true) {
+    res.json({ status: "ok" });
+  } else {
+    try {
+      const encryptedText = aes.encrypt(text);
+      const query = `INSERT INTO tweets (username, timestamp, text) VALUES ('${username}', '${timestamp}', '${encryptedText}')`;
+      await queryDB(db, query);
+      res.json({ status: "ok" });
+    } catch (error) {
+      pino.error("Error posting tweet:", error.message);
+      res.status(500).json({ error: "Internal Server Error." });
+    }
+  }
+};
 
 const getFeed = async (req, res) => {
-  try {
-    const query = "SELECT * FROM tweets ORDER BY id DESC;";
-    const tweets = await queryDB(db, query);
-    res.json(tweets);
-  } catch (error) {
-    pino.error("Error fetching feed:", error.message);
-    res.status(500).json({ error: "Internal Server Error." });
+  const query = "SELECT * FROM tweets ORDER BY id DESC;";
+  
+  
+  
+    try {
+      const tweets = await queryDB(db, query);
+      res.json(tweets);
+    } catch (error) {
+      pino.error("Error fetching feed:", error.message);
+      res.status(500).json({ error: "Internal Server Error." });
+    }
   }
-};
-
-const postTweet = async (req, res) => {
-  try {
-    const { username, timestamp, text } = req.body;
-    const query = `INSERT INTO tweets (username, timestamp, text) VALUES ('${username}', '${timestamp}', '${text}')`;
-    await queryDB(db, query);
-    res.json({ status: "ok" });
-  } catch (error) {
-    pino.error("Error posting tweet:", error.message);
-    res.status(500).json({ error: "Internal Server Error." });
-  }
-};
+  
+//};
 
 const login = async (req, res) => {
   try {
@@ -88,7 +109,6 @@ const login = async (req, res) => {
 
     if (user.length === 1) {
       const username = user[0].username;
-      const jwtSecret = "supersecret";
       const token = jwt.sign(
         {
           exp: Math.floor(Date.now() / 1000) + 60 * 60,
