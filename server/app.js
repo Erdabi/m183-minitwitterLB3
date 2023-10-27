@@ -1,9 +1,6 @@
 const express = require("express");
 const http = require("http");
 const pino = require("pino")();
-const expressPino = require("express-pino-logger")({
-  logger: pino.child({ name: "express" }),
-});
 const { initializeAPI } = require("./api");
 const { rateLimit } = require("express-rate-limit");
 
@@ -11,7 +8,6 @@ const { rateLimit } = require("express-rate-limit");
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json());
-app.use(expressPino); // Integriere express-pino-logger
 
 const server = http.createServer(app);
 
@@ -33,7 +29,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Initialize the REST API
-initializeAPI(app);
+initializeAPI(app); 
 
 // Start the web server
 const serverPort = process.env.PORT || 3001;
