@@ -1,4 +1,5 @@
 const sqlite3 = require("sqlite3").verbose();
+const bcrypt = require("bcrypt")
 
 
 const tweetsTableExists =
@@ -16,11 +17,16 @@ const createUsersTable = `CREATE TABLE users (
   username TEXT,
   password TEXT
 )`;
-const seedUsersTable = `INSERT INTO users (username, password) VALUES
-  ('switzerchees', '123456'),
-  ('john', '123456'),
-  ('jane', '123456')
-`;
+bcrypt.genSalt(10, (err, salt) => {
+  bcrypt.hash(123456, salt, function(err, hash) {
+    const seedUsersTable = `INSERT INTO users (username, password) VALUES
+    ('switzerchees', '123456'),
+    ('john', '123456'),
+    ('jane', '123456')
+  `;
+  });
+})
+
 
 const initializeDatabase = async () => {
   const db = new sqlite3.Database("./minitwitter.db");

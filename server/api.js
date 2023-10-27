@@ -4,6 +4,22 @@ const jwt = require('jsonwebtoken');
 
 let db;
 
+const authMiddleware = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).json({ error: "No authorization header." });
+  }
+  const [prefix, token] = authorization.split(" ");
+  if (prefix !== "Bearer") {
+    return res.status(401).json({ error: "Invalid authorization prefix." });
+  }
+  const tokenValidation = jwt.verify(token, jwtSecret);
+  if (!tokenValidation?.data) {
+    return res.status(401).json({ error: "Invalid token." });
+  }
+  next();
+};
+
 const initializeAPI = async (app) => {
   db = await initializeDatabase();
   app.get("/api/feed", getFeed);
@@ -21,16 +37,27 @@ const initializeAPI = async (app) => {
       .escape(),
     login
   );
+  app.get("/api/feed", authMiddleware, getFeed);
+  app.post(
+    "/api/feed",
+    authMiddleware,
+    body("username").notEmpty().withMessage("username is required."),
+    body("timestamp").notEmpty().withMessage("timestamp is required."),
+    body("text").notEmpty().withMessage("text is required."),
+    postTweet
+  );
 };
 
 const getFeed = async (req, res) => {
-  const query = req.query.q;
+  const query = "SELECT * FROM tweets ORDER BY id DESC;";
   const tweets = await queryDB(db, query);
   res.json(tweets);
 };
 
-const postTweet = (req, res) => {
-  insertDB(db, req.body.query);
+const postTweet = async(req, res) => {
+  const { username, timestamp, text } = req.body;
+  const query = `INSERT INTO tweets (username, timestamp, text) VALUES ('${username}', '${timestamp}', '${text}')`;
+  await queryDB(db, query);
   res.json({ status: "ok" });
 };
 

@@ -5,6 +5,7 @@ const { rateLimit } = require("express-rate-limit");
 
 // Create the express server
 const app = express();
+app.disable("x-powered-by");
 app.use(express.json());
 const server = http.createServer(app);
 
