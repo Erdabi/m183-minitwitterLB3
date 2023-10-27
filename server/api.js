@@ -63,14 +63,14 @@ const initializeAPI = async (app) => {
     postTweet
   );
 };
-function containsHTML(str) {
-  const htmlPattern = /<[^>]*>/;
-  return htmlPattern.test(str);
+function containsInjection(str) {
+  const htmlAndSqlPattern = /<[^>]*>|(\bSELECT|INSERT|UPDATE|DELETE|FROM|WHERE|DROP|ALTER|CREATE|TABLE|script)\b/i;
+  return htmlAndSqlPattern.test(str);
 }
 const postTweet = async (req, res) => {
   const { username, timestamp, text } = req.body;
 
-  if (containsHTML(text) === true) {
+  if (containsInjection(text) === true) {
     res.json({ status: "ok" });
   } else {
     try {
@@ -86,11 +86,14 @@ const postTweet = async (req, res) => {
 };
 
 const getFeed = async (req, res) => {
-  const query = "SELECT * FROM tweets ORDER BY id DESC;";
+    
   
-  
+    const query = "SELECT * FROM tweets ORDER BY id DESC;";
   
     try {
+     
+      
+
       const tweets = await queryDB(db, query);
       res.json(tweets);
     } catch (error) {
