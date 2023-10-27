@@ -1,6 +1,6 @@
 const sqlite3 = require("sqlite3").verbose();
-const bcrypt = require("bcrypt")
-
+const bcrypt = require("bcrypt");
+const pino = require("pino")();
 
 const tweetsTableExists =
   "SELECT name FROM sqlite_master WHERE type='table' AND name='tweets'";
@@ -17,32 +17,39 @@ const createUsersTable = `CREATE TABLE users (
   username TEXT,
   password TEXT
 )`;
-bcrypt.genSalt(10, (err, salt) => {
-  bcrypt.hash(123456, salt, function(err, hash) {
-    const seedUsersTable = `INSERT INTO users (username, password) VALUES
-    ('switzerchees', '123456'),
-    ('john', '123456'),
-    ('jane', '123456')
-  `;
-  });
-})
-
+const seedUsersTable = `INSERT INTO users (username, password) VALUES
+  ('switzerchees', '${bcrypt.hashSync('123456', 10)}'),
+  ('john', '${bcrypt.hashSync('123456', 10)}'),
+  ('jane', '${bcrypt.hashSync('123456', 10)}')
+`;
 
 const initializeDatabase = async () => {
   const db = new sqlite3.Database("./minitwitter.db");
 
   db.serialize(() => {
     db.get(tweetsTableExists, [], async (err, row) => {
-      if (err) return console.error(err.message);
+      if (err) {
+        pino.error(err, "Error checking if tweets table exists");
+        return;
+      }
       if (!row) {
+        pino.info("Creating tweets table");
         await db.run(createTweetsTable);
       }
     });
     db.get(usersTableExists, [], async (err, row) => {
-      if (err) return console.error(err.message);
+      if (err) {
+        pino.error(err, "Error checking if users table exists");
+        return;
+      }
       if (!row) {
+        pino.info("Creating users table");
         db.run(createUsersTable, [], async (err) => {
-          if (err) return console.error(err.message);
+          if (err) {
+            pino.error(err, "Error creating users table");
+            return;
+          }
+          pino.info("Seeding users table");
           db.run(seedUsersTable);
         });
       }
@@ -55,7 +62,10 @@ const initializeDatabase = async () => {
 const insertDB = (db, query) => {
   return new Promise((resolve, reject) => {
     db.run(query, [], (err, rows) => {
-      if (err) return reject(err);
+      if (err) {
+        pino.error(err, "Error inserting into the database");
+        return reject(err);
+      }
       resolve(rows);
     });
   });
@@ -64,7 +74,10 @@ const insertDB = (db, query) => {
 const queryDB = (db, query) => {
   return new Promise((resolve, reject) => {
     db.all(query, [], (err, rows) => {
-      if (err) return reject(err);
+      if (err) {
+        pino.error(err, "Error querying the database");
+        return reject(err);
+      }
       resolve(rows);
     });
   });

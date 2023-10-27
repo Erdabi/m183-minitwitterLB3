@@ -1,5 +1,9 @@
 const express = require("express");
 const http = require("http");
+const pino = require("pino")();
+const expressPino = require("express-pino-logger")({
+  logger: pino.child({ name: "express" }),
+});
 const { initializeAPI } = require("./api");
 const { rateLimit } = require("express-rate-limit");
 
@@ -7,30 +11,32 @@ const { rateLimit } = require("express-rate-limit");
 const app = express();
 app.disable("x-powered-by");
 app.use(express.json());
+app.use(expressPino); // Integriere express-pino-logger
+
 const server = http.createServer(app);
 
-// deliver static files from the client folder like css, js, images
+// Deliver static files from the client folder like css, js, images
 app.use(express.static("client"));
-// route for the homepage
+
+// Route for the homepage
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/client/index.html");
 });
 
-
 const limiter = rateLimit({
- windowMs: 60 * 1000, // 1 Minute
- limit: 50, // limit each IP to 50 requests per windowMs
- standardHeaders: "draft-7",
- legacyHeaders: false,
+  windowMs: 60 * 1000, // 1 Minute
+  limit: 50, // Limit each IP to 50 requests per windowMs
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
 });
 // Apply the rate limiting middleware to all requests
 app.use(limiter);
 
-// Initialize the REST api
+// Initialize the REST API
 initializeAPI(app);
 
-//start the web server
+// Start the web server
 const serverPort = process.env.PORT || 3001;
 server.listen(serverPort, () => {
-  console.log(`Express Server started on port ${serverPort}`);
+  pino.info(`Express Server started on port ${serverPort}`);
 });

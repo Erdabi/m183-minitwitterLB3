@@ -15,6 +15,7 @@
     "express-rate-limit": "^7.1.2",
     "express-validator": "^7.0.1",
     "jsonwebtoken": "^9.0.2",
+    "pino": "^8.16.1",
     "sqlite3": "^5.1.6"
   }
 }
