@@ -1,5 +1,6 @@
 const sqlite3 = require("sqlite3").verbose();
 
+
 const tweetsTableExists =
   "SELECT name FROM sqlite_master WHERE type='table' AND name='tweets'";
 const createTweetsTable = `CREATE TABLE tweets (
