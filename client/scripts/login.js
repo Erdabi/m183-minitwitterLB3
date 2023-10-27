@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
       resultText.innerHTML = "Password must be at least 6 characters.";
       return;
     } else {
-      resultText.innerHTML = "Password is invalid.";
+      resultText.innerHTML = "";
     }
 
     try {
@@ -34,14 +34,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data?.token) {
         localStorage.setItem("token", data.token);
-        const expirationTime = decodedToken.exp * 1000;
-        const currentTime = Date.now();
-
-        if (currentTime > expirationTime) {
-          localStorage.removeItem("token");
-          errorText.innerText = "Session has expired. Please log in again.";
-          return;
-        }
 
         window.location.href = "/";
       } else {

@@ -39,9 +39,21 @@ const login = async (req, res) => {
   const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
   const user = await queryDB(db, query);
 
+  
+
   if (user.length === 1) {
-    const token = jwt.sign({ username: user[0].username }, 'prvKey');
+    const username = user[0].username;
+
+    const jwtSecret = "supersecret";
+    const token = jwt.sign(
+      {
+        exp: Math.floor(Date.now() / 1000) + 60 * 60,
+        data: username,
+      },
+      jwtSecret
+    );
     res.json({ token });
+  
   } else {
     res.status(401).json({ error: "Username or password invalid!" });
   }
